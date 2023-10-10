@@ -1,101 +1,82 @@
-#print("\n")
-#print("\tGame Start\nNow the task is to move all of them to right side of the river")
-#print("rules:\n1. The boat can carry at most two people\n2. If cannibals num greater than missionaries then the cannibals would eat the missionaries\n3. The boat cannot cross the river by itself with no people on board")
-
-def check(m,c):
-    if m!=c:
-        print("Missionaries and cannibels must be in same number hence wrong input ")
+class State:
+    def __init__(self, m, c, b):
+        self.m = m
+        self.c = c
+        self.b = b
+    def is_valid(self):
+        if self.m < 0 or self.c < 0:
+            return False
+        if self.m < self.c and self.m > 0:
+            return False
+        if 3 - self.m < 3 - self.c and 3 - self.m > 0:
+            return False
+        return True
+    def is_goal(self):
+        return self.m == 0 and self.c == 0 and self.b == 1
+    def __eq__(self, other):
+        return self.m == other.m and self.c == other.c and self.b == other.b
+    def __hash__(self):
+        return hash((self.m, self.c, self.b))
+def successors(state):
+    successor_states = []
+    moves = [(2, 0), (1, 0), (1, 1), (0, 1), (0, 2)]  
+    for move in moves:
+        if state.b == 0:  # boat on the left side
+            new_state = State(state.m - move[0], state.c - move[1], 1)
+        else:  # boat on the right side
+            new_state = State(state.m + move[0], state.c + move[1], 0)
+        if new_state.is_valid():
+            successor_states.append(new_state)
+    return successor_states
+def find(initial_state):
+    visited = set()
+    queue = [[initial_state]]
+    if initial_state.is_goal():
+        return [initial_state]
+    while queue:
+        path = queue.pop(0)
+        current_state = path[-1]
+        for successor in successors(current_state):
+            if successor not in visited:
+                new_path = list(path)
+                new_path.append(successor)
+                queue.append(new_path)
+                visited.add(successor)
+                if successor.is_goal():
+                    return new_path
+    return None
+def print_solution(solution):
+    if solution is None:
+        print("No solution found.")
         return
-m=int(input("enter no.of missionaries "))
-c=int(input("enter no.of cannibels "))
-check(m,c)
-lM = m          
-lC = c           
-rM=0            
-rC=0             
-userM = 0        
-userC = 0        
-k = 0
-#print("\nM M M C C C |     --- | \n")
-try:
-    while(True):
-        while(True):
-            print("Left side -> right side river travel")
-            #uM = user input for number of missionaries for left to right travel 
-            #uC = user input for  number of cannibals for left to right travel 
-            uM = int(input("Enter number of Missionaries travel => "))    
-            uC = int(input("Enter number of Cannibals travel => "))
-  
-            if((uM==0)and(uC==0)):
-                print("Empty travel not possible")
-                print("Re-enter : ")
-            elif(((uM+uC) <= m-1)and((lM-uM)>=0)and((lC-uC)>=0)):
-                break
-            else:
-                print("Wrong input re-enter : ")
-        lM = (lM-uM)
-        lC = (lC-uC)
-        rM += uM
-        rC += uC
-  
-        print("\n")
-        for i in range(0,lM):
-            print("M ",end="")
-        for i in range(0,lC):
-            print("C ",end="")
-        print("| --> | ",end="")
-        for i in range(0,rM):
-            print("M ",end="")
-        for i in range(0,rC):
-            print("C ",end="")
-        print("\n")
-  
-        k +=1
-  
-        if(((lC==c)and (lM == m-1))or((lC==c)and(lM==m-1))or((lC==c-1)and(lM==m-2))or((rC==c)and (rM == m-1))or((rC==c)and(rM==m-1))or((rC==c-1)and(rM==m-2))):
-            print("Cannibals eat missionaries:\nYou lost the game")
-  
-            break
-  
-        if((rM+rC) == m+c):
-            print("You won the game : \n\tCongrats")
-            print("Total attempt")
-            print(k)
-            break
-        while(True):
-            print("Right side -> Left side river travel")
-            userM = int(input("Enter number of Missionaries travel => "))
-            userC = int(input("Enter number of Cannibals travel => "))
-              
-            if((userM==0)and(userC==0)):
-                    print("Empty travel not possible")
-                    print("Re-enter : ")
-            elif(((userM+userC) <= m-1)and((rM-userM)>=0)and((rC-userC)>=0)):
-                break
-            else:
-                print("Wrong input re-enter : ")
-        lM += userM 
-        lC += userC
-        rM -= userM
-        rC -= userC
-  
-        k +=1
-        print("\n")
-        for i in range(0,lM):
-            print("M ",end="")
-        for i in range(0,lC):
-            print("C ",end="")
-        print("| <-- | ",end="")
-        for i in range(0,rM):
-            print("M ",end="")
-        for i in range(0,rC):
-            print("C ",end="")
-        print("\n")
-  
-      
-  
-        if(((lC==c)and (lM == m-1))or((lC==c)and(lM==m-1))or((lC==c-1)and(lM==m-2))or((rC==c)and (rM == m-2))or((rC==c)and(rM==m-1))or((rC==c-1)and(rM==m-2))):
-            print("Cannibals eat missionaries:\nYou lost the game")
-            break
-except EOFError as e:
-    print("\nInvalid input please retry !!")
+    stepcount=0
+    print("Missionaries and Cannibals Solution:")
+    m_remaining = solution[0].m  # Initial number of missionaries on the left side
+    c_remaining = solution[0].c  # Initial number of cannibals on the left side  
+    for idx, state in enumerate(solution):
+        boat = "Left" if state.b == 0 else "Right"     
+        if idx > 0:
+            moved_m = abs(m_remaining - state.m)  # Calculate the moved missionaries
+            moved_c = abs(c_remaining - state.c)  # Calculate the moved cannibals
+        else:
+            moved_m, moved_c = 0, 0  
+        m_remaining = state.m  # Update the remaining missionaries count
+        c_remaining = state.c  # Update the remaining cannibals count
+        print("step : ",stepcount)
+        if moved_m > 0 or moved_c > 0:
+            print(f"{moved_m}M {moved_c}C moved from Left to Right" if state.b == 1 else f"{moved_m}M {moved_c}C moved from Right to Left")   
+        print(f"{state.m}M {state.c}C are on Left Side")
+        print(f"{m - state.m}M {c - state.c}C are on Right Side")
+        print(f"Boat: {boat} side")
+        print()
+        stepcount+=1
+if __name__ == "__main__":
+    m = int(input("Enter no.of missionaries: "))
+    c = int(input("Enter no.of cannibals: "))
+    if m!=c:
+        print("Missionaries and Cannibals are not in equal number not possible")
+    else:
+        initial_state = State(m, c, 0)
+        sol = find(initial_state)
+        print_solution(sol)
+        print("Goal State is reached")
