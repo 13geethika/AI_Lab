@@ -1,82 +1,54 @@
+from collections import deque
 class State:
-    def __init__(self, m, c, b):
-        self.m = m
-        self.c = c
-        self.b = b
-    def is_valid(self):
-        if self.m < 0 or self.c < 0:
-            return False
-        if self.m < self.c and self.m > 0:
-            return False
-        if 3 - self.m < 3 - self.c and 3 - self.m > 0:
-            return False
-        return True
-    def is_goal(self):
-        return self.m == 0 and self.c == 0 and self.b == 1
+    def __init__(self, missionaries, cannibals, boat):
+        self.m = missionaries
+        self.c = cannibals
+        self.b = boat
     def __eq__(self, other):
         return self.m == other.m and self.c == other.c and self.b == other.b
     def __hash__(self):
         return hash((self.m, self.c, self.b))
-def successors(state):
-    successor_states = []
-    moves = [(2, 0), (1, 0), (1, 1), (0, 1), (0, 2)]  
+m=int(input("Enter the missionaries :"))
+c=int(input("Enter the cannibals :"))# Define the initial state and goal state
+initial_state = State(m, c, 1)  # (Missionaries on the left, Cannibals on the left, Boat position)
+goal_state = State(0, 0, 0)     # (Missionaries on the right, Cannibals on the right, Boat position)
+def is_valid_state(state):
+    m, c, b = state.m, state.c, state.b
+    return 0 <= m <= 3 and 0 <= c <= 3 and (m == 0 or m >= c) and ((3 - m) == 0 or (3 - m) >= (3 - c))
+def get_next_states(state):
+    moves = [(1, 0), (2, 0), (0, 1), (0, 2), (1, 1)]
+    next_states = []  
     for move in moves:
-        if state.b == 0:  # boat on the left side
-            new_state = State(state.m - move[0], state.c - move[1], 1)
-        else:  # boat on the right side
-            new_state = State(state.m + move[0], state.c + move[1], 0)
-        if new_state.is_valid():
-            successor_states.append(new_state)
-    return successor_states
-def find(initial_state):
+        if state.b == 1:  # Boat on the left
+            new_state = State(state.m - move[0], state.c - move[1], 0)
+        else:  # Boat on the right
+            new_state = State(state.m + move[0], state.c + move[1], 1)      
+        if is_valid_state(new_state):
+            next_states.append(new_state) 
+    return next_states
+def dfs_search():
     visited = set()
-    queue = [[initial_state]]
-    if initial_state.is_goal():
-        return [initial_state]
-    while queue:
-        path = queue.pop(0)
-        current_state = path[-1]
-        for successor in successors(current_state):
-            if successor not in visited:
-                new_path = list(path)
-                new_path.append(successor)
-                queue.append(new_path)
-                visited.add(successor)
-                if successor.is_goal():
-                    return new_path
-    return None
-def print_solution(solution):
-    if solution is None:
-        print("No solution found.")
-        return
-    stepcount=0
-    print("Missionaries and Cannibals Solution:")
-    m_remaining = solution[0].m  # Initial number of missionaries on the left side
-    c_remaining = solution[0].c  # Initial number of cannibals on the left side  
-    for idx, state in enumerate(solution):
-        boat = "Left" if state.b == 0 else "Right"     
-        if idx > 0:
-            moved_m = abs(m_remaining - state.m)  # Calculate the moved missionaries
-            moved_c = abs(c_remaining - state.c)  # Calculate the moved cannibals
-        else:
-            moved_m, moved_c = 0, 0  
-        m_remaining = state.m  # Update the remaining missionaries count
-        c_remaining = state.c  # Update the remaining cannibals count
-        print("step : ",stepcount)
-        if moved_m > 0 or moved_c > 0:
-            print(f"{moved_m}M {moved_c}C moved from Left to Right" if state.b == 1 else f"{moved_m}M {moved_c}C moved from Right to Left")   
-        print(f"{state.m}M {state.c}C are on Left Side")
-        print(f"{m - state.m}M {c - state.c}C are on Right Side")
+    stack = deque([(initial_state, [])])   
+    while stack:
+        current_state, path = stack.pop() 
+        if current_state == goal_state:
+            return path  
+        if current_state not in visited:
+            visited.add(current_state)
+            for next_state in get_next_states(current_state):
+                stack.append((next_state, path + [next_state]))
+solution = dfs_search()
+if solution:
+    print("Solution found:")
+    for i, state in enumerate(solution):
+        moved_m = abs(state.m - solution[i-1].m) if i > 0 else 0
+        moved_c = abs(state.c - solution[i-1].c) if i > 0 else 0
+        boat = "Left" if state.b == 1 else "Right"
+        m, c = 3 - state.m, 3 - state.c
+        print(f"Step {i + 1}: {moved_m}M {moved_c}C moved from {'Left' if state.b == 1 else 'Right'} to {'Right' if state.b == 0 else 'Left'}")
+        print(f"{state.m}M {state.c}C are on {'Left' if state.b == 1 else 'Right'} Side")
+        print(f"{m}M {c}C are on {'Right' if state.b == 1 else 'Left'} Side")
         print(f"Boat: {boat} side")
         print()
-        stepcount+=1
-if __name__ == "__main__":
-    m = int(input("Enter no.of missionaries: "))
-    c = int(input("Enter no.of cannibals: "))
-    if m!=c:
-        print("Missionaries and Cannibals are not in equal number not possible")
-    else:
-        initial_state = State(m, c, 0)
-        sol = find(initial_state)
-        print_solution(sol)
-        print("Goal State is reached")
+else:
+    print("No solution found.")
