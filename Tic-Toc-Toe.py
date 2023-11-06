@@ -1,71 +1,80 @@
-import time
 import random
-board = ["", " ", " ", " ", " ", " ", " ", " ", " ", " "]
-def choice(player,cho):
-    if board[cho] == " ":
-        board[cho] = player
-    else:
-        print ("Sorry, that space is not empty!")
-        time.sleep(1)
-    if is_winner(board, player):
-        print_header()
-        print_board()
-        print(player+" wins! Congratulations")
-        return
-    if is_board_full(board):
-        print("Tie!")
-        return
-def print_header():
-    print(
-    """
- _____  _  ____     _____  ____  ____     _____  ____  _____
-/__ __\/ \/   _\   /__ __\/  _ \/   _\   /__ __\/  _ \/  __/    
-  / \  | ||  / _____ / \  | / \||  / _____ / \  | / \||  \      
-  | |  | ||  \_\____\| |  | |-|||  \_\____\| |  | \_/||  /_     
-  \_/  \_/\____/     \_/  \_/ \|\____/     \_/  \____/\____\
-""")
-def print_board():
-    print("   |   |   ")
-    print(" " + board[1] + " | " + board[2] + " | " + board[3] + "  ")
-    print("   |   |   ")
-    print("---|---|---")
-    print("   |   |   ")
-    print(" " + board[4] + " | " + board[5] + " | " + board[6] + "  ")
-    print("   |   |   ")
-    print("---|---|---")
-    print("   |   |   ")
-    print(" " + board[7] + " | " + board[8] + " | " + board[9] + "  ")
-    print("   |   |   ")
-def is_winner(board, player):
-    if ((board[1] == player and board[2] == player and board[3] == player) or 
-            (board[4] == player and board[5] == player and board[6] == player) or 
-            (board[7] == player and board[8] == player and board[9] == player) or 
-            (board[1] == player and board[4] == player and board[7] == player) or 
-            (board[2] == player and board[5] == player and board[8] == player) or 
-            (board[3] == player and board[6] == player and board[9] == player) or 
-            (board[1] == player and board[5] == player and board[9] == player) or 
-            (board[3] == player and board[5] == player and board[7] == player)):
+def print_board(board):
+    print("-" * 9)
+    for row in board:
+        print(" | ".join(row))
+        print("-" * 9)
+def check_winner(board, player):
+    for row in board:
+        if all(cell == player for cell in row):
+            return True
+    for col in range(3):
+        if all(board[row][col] == player for row in range(3)):
+            return True
+    if all(board[i][i] == player for i in range(3)) or all(board[i][2 - i] == player for i in range(3)):
         return True
-    else:
-        return False 
-def is_board_full(board):
-    if " " in board:
-        return False
-    else:
-        return True
-def get_computer_move(board, player):
-    if board[5] == " ":
-        return 5
-    while True:
-        move = random.randint(1, 9)
-        if board[move] == " ":
-            return move
-            break
-    return 5
-while True:
-    print_header()
-    print_board()
-    cho = int(input("Please choose an empty space for X. "))
-    choice("X",cho)
-    cho= get_computer_move(board, "O")
-    choice("O",cho)
+    return False
+def find_empty_cells(board):
+    empty_cells = []
+    for row in range(3):
+        for col in range(3):
+            if board[row][col] == " ":
+                empty_cells.append((row, col))
+    return empty_cells
+def check_and_block_winner(board, player):
+    for row, col in find_empty_cells(board):
+        # Check if the computer can win on this move
+        board[row][col] = player
+        if check_winner(board, player):
+            board[row][col] = " "
+            return row, col
+        board[row][col] = " "
+    return None
+def computer_move(board):
+    empty_cells = find_empty_cells(board)    # Updated magic square strategy
+    magic_square = [
+        [8, 1, 6],
+        [3, 5, 7],
+        [4, 9, 2]
+    ]  # Check if the computer can win on the next move
+    winning_move = check_and_block_winner(board, "O")
+    if winning_move:
+        return winning_move# Check if the human can win on the next move and block it
+    blocking_move = check_and_block_winner(board, "X")
+    if blocking_move:
+        return blocking_move# Otherwise, choose the move with the highest magic square value
+    best_move = None
+    best_score = -1
+    for row, col in empty_cells:
+        score = magic_square[row][col]
+        if score > best_score:
+            best_score = score
+            best_move = (row, col)
+    return best_move
+def main():
+    board = [[" " for _ in range(3)] for _ in range(3)]
+    player = "X"
+    computer = "O"
+    game_over = False
+    print("Welcome to Tic-Tac-Toe!")
+    print_board(board)
+    while not game_over:
+        if player == "X":
+            row, col = map(int, input("Enter your move (row and column): ").split())
+        else:
+            row, col = computer_move(board)
+            print("Computer's move:", row, col)
+        if board[row][col] == " ":
+            board[row][col] = player
+            print_board(board)    
+            if check_winner(board, player):
+                print(player, "wins!")
+                game_over = True
+            elif all(board[r][c] != " " for r in range(3) for c in range(3)):
+                print("It's a draw!")
+                game_over = True    
+            player = "X" if player == "O" else "O"
+        else:
+            print("Cell is already occupied. Try again.")
+if __name__ == "__main__":
+    main()
