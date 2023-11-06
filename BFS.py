@@ -1,15 +1,38 @@
-graph = {'5':['3','7','9'],'3':['2', '4','14'],'7':['8'],'2':[],'4':['8'],'8':[],'9':['5','10'],'14':[],'10':[]}
-visited = [] 
-queue = []     
-def bfs(visited, graph, node): 
-  visited.append(node)
-  queue.append(node)
-  while queue:        
-    m = queue.pop(0) 
-    print (m, end = " ") 
-    for adj in graph[m]:
-        if adj not in visited:
-            visited.append(adj)
-            queue.append(adj)
-print("Breadth-First Search order is ")
-bfs(visited, graph, '5')    
+from collections import defaultdict
+class Graph:
+    def __init__(self):
+        self.graph = defaultdict(list)
+        self.bfs = ""
+        self.found = False
+    def addEdge(self, u, v):
+        self.graph[u].append(v)
+    def BFS(self, root, search):
+        visited = []
+        queue = []
+        self.bfs = ""
+        visited.append(root)
+        queue.append(root)
+        while queue:
+            m = queue.pop(0)
+            self.bfs = self.bfs + m + " "
+            if m == search:
+                self.found = True
+                return
+            for neighbour in self.graph[m]:
+                if neighbour not in visited:
+                    visited.append(neighbour)
+                    queue.append(neighbour)
+g = Graph()
+n = int(input("Enter the number of nodes: "))
+root = input("Enter root node: ")
+search = input("Enter search element: ")
+print("Enter the parent-child pairs of the tree:")
+for i in range(n - 1):
+    parent, child = input().split()
+    g.addEdge(parent, child)
+g.BFS(root, search)
+if g.found:
+    print("Following is the Breadth-First Search:")
+    print(g.bfs)
+else:
+    print("Given search element is not found in the tree")
